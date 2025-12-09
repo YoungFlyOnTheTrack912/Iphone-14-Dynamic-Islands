@@ -13,7 +13,13 @@
     { "source": "/api/compress", "destination": "/api/compress.js" },
     { "source": "/api/extensions", "destination": "/api/extensions.js" }
   ],
-  "public": {
-    "maxAge": 3600
-  }
+  "public": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    }
+  ]
 }
