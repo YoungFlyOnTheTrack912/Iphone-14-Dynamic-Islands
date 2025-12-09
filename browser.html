@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proxy Browser</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      overflow: hidden;
+    }
+
+    /* Browser Toolbar */
+    .browser-toolbar {
+      background: #f3f3f3;
+      border-bottom: 1px solid #ddd;
+      padding: 10px 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #e0e0e0;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .address-bar-container {
+      flex: 1;
+      min-width: 300px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .address-bar {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .address-bar:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .go-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .go-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Tabs */
+    .tabs-bar {
+      background: #f0f0f0;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 5px;
+      padding: 5px;
+      overflow-x: auto;
+      align-items: center;
+    }
+
+    .tab {
+      background: white;
+      border: 1px solid #ccc;
+      padding: 8px 15px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      white-space: nowrap;
+      font-size: 13px;
+      transition: all 0.2s;
+      max-width: 200px;
+    }
+
+    .tab:hover {
+      background: #f9f9f9;
+    }
+
+    .tab.active {
+      background: white;
+      border-bottom-color: white;
+      font-weight: 600;
+    }
+
+    .tab-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tab-close {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #999;
+      cursor: pointer;
+      font-size: 16px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tab-close:hover {
+      color: #333;
+    }
+
+    .new-tab-btn {
+      background: none;
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-size: 18px;
+      width: 40px;
+      height: auto;
+    }
+
+    /* Content Area */
+    .content-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: white;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    iframe.active {
+      display: block;
+    }
+
+    /* Bookmarks Bar */
+    .bookmarks-bar {
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      padding: 8px 15px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+
+    .bookmark {
+      background: #e8f0ff;
+      color: #667eea;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      border: 1px solid #d0e0ff;
+    }
+
+    .bookmark:hover {
+      background: #d0e0ff;
+      transform: translateY(-1px);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      background: #f3f3f3;
+      border-top: 1px solid #ddd;
+      padding: 8px 15px;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .loading-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ddd;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-spinner.active {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Extensions Badge */
+    .extensions-badge {
+      position: fixed;
+      bottom: 30px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      z-index: 5000;
+      transition: all 0.3s;
+    }
+
+    .extensions-badge:hover {
+      transform: scale(1.1);
+    }
+
+    .extensions-badge.hidden {
+      display: none;
+    }
+
+    /* Extensions Panel */
+    #extensionsPanel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 350px;
+      height: 100vh;
+      background: white;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+      z-index: 10002;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+
+    #extensionsPanel:not(.hidden) {
+      transform: translateX(0);
+    }
+
+    #extensionsPanel.hidden {
+      display: flex;
+    }
+
+    .panel-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn:hover {
+      color: #333;
+    }
+
+    .panel-body {
+      padding: 15px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .extension-toggle {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .extension-toggle:hover {
+      background: #f0f0f0;
+    }
+
+    .extension-toggle input[type="checkbox"] {
+      margin-top: 4px;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+    }
+
+    .extension-toggle span {
+      font-weight: 600;
+      color: #333;
+      display: block;
+    }
+
+    .extension-toggle small {
+      color: #999;
+      display: block;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .panel-footer {
+      padding: 15px;
+      border-top: 1px solid #eee;
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .panel-footer kbd {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <!-- Browser Toolbar -->
+  <div class="browser-toolbar">
+    <div class="nav-buttons">
+      <button id="backBtn" title="Back">← Back</button>
+      <button id="forwardBtn" title="Forward">Forward →</button>
+      <button id="refreshBtn" title="Refresh">🔄 Refresh</button>
+      <button id="homeBtn" title="Home">🏠 Home</button>
+    </div>
+    <div class="address-bar-container">
+      <input type="text" id="addressBar" class="address-bar" placeholder="Enter URL or search...">
+      <button class="go-btn" id="goBtn">Go</button>
+    </div>
+    <button id="extBtn" title="Extensions (Ctrl+Shift+X)">🛡️</button>
+  </div>
+
+  <!-- Bookmarks Bar -->
+  <div class="bookmarks-bar" id="bookmarksBar"></div>
+
+  <!-- Tabs Bar -->
+  <div class="tabs-bar" id="tabsBar"></div>
+
+  <!-- Content Area -->
+  <div class="content-container" id="contentContainer"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span><span class="loading-spinner" id="loadingSpinner"></span> <span id="statusText">Ready</span></span>
+    <span id="urlDisplay"></span>
+  </div>
+
+  <!-- Extensions Badge -->
+  <div class="extensions-badge hidden" id="extensionsBadge" onclick="toggleExtensionsPanel()">
+    <span id="badgeCount">0</span>
+  </div>
+
+  <!-- Extensions Panel -->
+  <div id="extensionsPanel" class="hidden">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2>🛡️ Extensions</h2>
+        <button class="close-btn" onclick="toggleExtensionsPanel()">✕</button>
+      </div>
+      <div class="panel-body">
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-adblock" onchange="updateExtensions()">
+          <span>🚫 Ad Blocker</span>
+          <small>Remove all ads</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-tracking" onchange="updateExtensions()">
+          <span>👁️ Tracking Protection</span>
+          <small>Block analytics</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-privacy" onchange="updateExtensions()">
+          <span>🔒 Privacy Mode</span>
+          <small>Strip metadata</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-malware" onchange="updateExtensions()">
+          <span>⚠️ Malware Blocker</span>
+          <small>Block dangerous code</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-security" onchange="updateExtensions()">
+          <span>🔐 Security Headers</span>
+          <small>Add protections</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-darkmode" onchange="updateExtensions()">
+          <span>🌙 Dark Mode</span>
+          <small>Dark theme</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nopopup" onchange="updateExtensions()">
+          <span>⛔ Pop-up Blocker</span>
+          <small>Remove popups</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nobanner" onchange="updateExtensions()">
+          <span>🚷 Banner Remover</span>
+          <small>Hide banners</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-reader" onchange="updateExtensions()">
+          <span>📖 Reader Mode</span>
+          <small>Clean layout</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-noautoplay" onchange="updateExtensions()">
+          <span>🔇 Disable Autoplay</span>
+          <small>No auto videos</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nojs" onchange="updateExtensions()">
+          <span>⚙️ Disable JavaScript</span>
+          <small>Static only</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-lazyload" onchange="updateExtensions()">
+          <span>⚡ Lazy Load</span>
+          <small>Load on demand</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nocookie" onchange="updateExtensions()">
+          <span>🍪 No Cookies</span>
+          <small>Block cookies</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-images" onchange="updateExtensions()">
+          <span>🖼️ Compress Images</span>
+          <small>Faster loading</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nothirdparty" onchange="updateExtensions()">
+          <span>🚫 Block Third-party</span>
+          <small>No external</small>
+        </label>
+      </div>
+      <div class="panel-footer">
+        <small>Press <kbd>Ctrl+Shift+X</kbd> to toggle panel</small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Browser state
+    const browser = {
+      tabs: [],
+      currentTabId: null,
+      history: {},
+      bookmarks: [
+        { name: '🔍 Google', url: 'google.com' },
+        { name: '📺 YouTube', url: 'youtube.com' },
+        { name: '📖 Wikipedia', url: 'wikipedia.org' },
+        { name: '🎯 Reddit', url: 'reddit.com' },
+        { name: '💻 GitHub', url: 'github.com' },
+        { name: '🐦 Twitter', url: 'twitter.com' },
+        { name: '💬 ChatGPT', url: 'chatgpt.com' }
+      ]
+    };
+
+    // Initialize browser
+    function initBrowser() {
+      loadExtensions();
+      setupBookmarks();
+      createNewTab('about:home');
+      setupEventListeners();
+    }
+
+    // Create new tab
+    function createNewTab(url = 'about:home') {
+      const tabId = Date.now().toString();
+      const tab = {
+        id: tabId,
+        url: url,
+        title: 'New Tab',
+        history: [url],
+        historyIndex: 0
+      };
+      browser.tabs.push(tab);
+      browser.currentTabId = tabId;
+      browser.history[tabId] = [];
+      renderTabs();
+      loadTab(tabId, url);
+      return tabId;
+    }
+
+    // Close tab
+    function closeTab(tabId) {
+      const idx = browser.tabs.findIndex(t => t.id === tabId);
+      if (idx === -1) return;
+      browser.tabs.splice(idx, 1);
+      delete browser.history[tabId];
+      
+      if (browser.currentTabId === tabId) {
+        if (browser.tabs.length > 0) {
+          const newIdx = Math.min(idx, browser.tabs.length - 1);
+          browser.currentTabId = browser.tabs[newIdx].id;
+        } else {
+          createNewTab();
+          return;
+        }
+      }
+      renderTabs();
+      renderContent();
+    }
+
+    // Render tabs
+    function renderTabs() {
+      const tabsBar = document.getElementById('tabsBar');
+      tabsBar.innerHTML = '';
+      
+      browser.tabs.forEach(tab => {
+        const tabEl = document.createElement('div');
+        tabEl.className = 'tab' + (tab.id === browser.currentTabId ? ' active' : '');
+        tabEl.innerHTML = `
+          <span class="tab-title">${tab.title || 'New Tab'}</span>
+          <button class="tab-close" onclick="event.stopPropagation(); closeTab('${tab.id}')">✕</button>
+        `;
+        tabEl.onclick = () => switchTab(tab.id);
+        tabsBar.appendChild(tabEl);
+      });
+
+      const newTabBtn = document.createElement('button');
+      newTabBtn.className = 'new-tab-btn';
+      newTabBtn.textContent = '+';
+      newTabBtn.onclick = () => createNewTab();
+      tabsBar.appendChild(newTabBtn);
+    }
+
+    // Switch tab
+    function switchTab(tabId) {
+      browser.currentTabId = tabId;
+      renderTabs();
+      renderContent();
+    }
+
+    // Load tab
+    function loadTab(tabId, url) {
+      const tab = browser.tabs.find(t => t.id === tabId);
+      if (!tab) return;
+
+      if (url === 'about:home') {
+        renderHomePage();
+        document.getElementById('addressBar').value = '';
+        document.getElementById('urlDisplay').textContent = '';
+        return;
+      }
+
+      // Normalize URL
+      if (!/^https?:\/\//.test(url)) {
+        url = 'https://' + url;
+      }
+
+      tab.url = url;
+      tab.title = new URL(url).hostname || 'Loading...';
+      tab.history.push(url);
+      tab.historyIndex = tab.history.length - 1;
+      
+      renderTabs();
+      renderContent();
+      updateAddressBar();
+    }
+
+    // Render content
+    function renderContent() {
+      const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+      if (!tab) return;
+
+      const container = document.getElementById('contentContainer');
+      container.innerHTML = '';
+
+      if (tab.url === 'about:home') {
+        renderHomePage();
+        return;
+      }
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'iframe-' + tab.id;
+      iframe.className = 'active';
+      
+      const extensions = getActiveExtensions();
+      const extParam = extensions.length > 0 ? '&ext=' + extensions.join(',') : '';
+      iframe.src = '/api/proxy?url=' + encodeURIComponent(tab.url) + extParam;
+
+      iframe.onload = () => {
+        try {
+          tab.title = iframe.contentDocument?.title || new URL(tab.url).hostname;
+        } catch (e) {}
+        renderTabs();
+        updateStatus('Ready', false);
+      };
+
+      iframe.onerror = () => {
+        updateStatus('Error loading page', false);
+      };
+
+      container.appendChild(iframe);
+      updateStatus('Loading...', true);
+      updateAddressBar();
+    }
+
+    // Render home page
+    function renderHomePage() {
+      const container = document.getElementById('contentContainer');
+      container.innerHTML = `
+        <div style="padding: 40px; max-width: 800px; margin: 0 auto; text-align: center;">
+          <h1 style="color: #333; font-size: 48px; margin-bottom: 20px;">🌐 Proxy Browser</h1>
+          <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Your private, secure browsing companion</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px;">
+            ${browser.bookmarks.map(b => `
+              <button onclick="navigateToUrl('${b.url}')" style="
+                padding: 20px;
+                background: #f5f5f5;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#667eea'; this.style.color='white'; this.style.borderColor='#667eea'" onmouseout="this.style.background='#f5f5f5'; this.style.color='#333'; this.style.borderColor='#ddd'">
+                ${b.name}
+              </button>
+            `).join('')}
+          </div>
+          <div style="margin-top: 40px; padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; font-size: 14px;">
+            <strong>💡 Tips:</strong> Use the address bar to navigate. Press <kbd>Ctrl+Shift+X</kbd> to access extensions. Open multiple tabs with the + button!
+          </div>
+        </div>
+      `;
+    }
+
+    // Navigate to URL
+    function navigateToUrl(url) {
+      const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+      if (tab) loadTab(browser.currentTabId, url);
+    }
+
+    // Update address bar
+    function updateAddressBar() {
+      const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+      if (tab && tab.url !== 'about:home') {
+        document.getElementById('addressBar').value = tab.url;
+        document.getElementById('urlDisplay').textContent = tab.url;
+      } else {
+        document.getElementById('addressBar').value = '';
+        document.getElementById('urlDisplay').textContent = '';
+      }
+    }
+
+    // Update status
+    function updateStatus(text, loading) {
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('loadingSpinner').classList.toggle('active', loading);
+    }
+
+    // Setup bookmarks bar
+    function setupBookmarks() {
+      const bookmarksBar = document.getElementById('bookmarksBar');
+      browser.bookmarks.forEach(b => {
+        const bookmark = document.createElement('div');
+        bookmark.className = 'bookmark';
+        bookmark.textContent = b.name;
+        bookmark.onclick = () => navigateToUrl(b.url);
+        bookmarksBar.appendChild(bookmark);
+      });
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+      document.getElementById('goBtn').onclick = () => {
+        const url = document.getElementById('addressBar').value.trim();
+        if (url) navigateToUrl(url);
+      };
+
+      document.getElementById('addressBar').onkeydown = (e) => {
+        if (e.key === 'Enter') document.getElementById('goBtn').click();
+      };
+
+      document.getElementById('backBtn').onclick = () => {
+        const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+        if (tab && tab.historyIndex > 0) {
+          tab.historyIndex--;
+          loadTab(browser.currentTabId, tab.history[tab.historyIndex]);
+        }
+      };
+
+      document.getElementById('forwardBtn').onclick = () => {
+        const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+        if (tab && tab.historyIndex < tab.history.length - 1) {
+          tab.historyIndex++;
+          loadTab(browser.currentTabId, tab.history[tab.historyIndex]);
+        }
+      };
+
+      document.getElementById('refreshBtn').onclick = () => {
+        const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+        if (tab) {
+          const iframe = document.getElementById('iframe-' + tab.id);
+          if (iframe) iframe.src = iframe.src;
+        }
+      };
+
+      document.getElementById('homeBtn').onclick = () => {
+        const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+        if (tab) loadTab(browser.currentTabId, 'about:home');
+      };
+
+      document.getElementById('extBtn').onclick = () => {
+        toggleExtensionsPanel();
+      };
+
+      // Ctrl+Shift+X keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+          e.preventDefault();
+          toggleExtensionsPanel();
+        }
+      });
+
+      // Ctrl+T for new tab
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 't') {
+          e.preventDefault();
+          createNewTab();
+        }
+      });
+
+      // Ctrl+W to close tab
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'w') {
+          e.preventDefault();
+          closeTab(browser.currentTabId);
+        }
+      });
+    }
+
+    // Extensions management
+    function getActiveExtensions() {
+      const exts = [];
+      const extIds = ['adblock', 'tracking', 'privacy', 'malware', 'security', 'darkmode', 'nopopup', 'nobanner', 'reader', 'noautoplay', 'nojs', 'lazyload', 'nocookie', 'images', 'nothirdparty'];
+      extIds.forEach(id => {
+        const el = document.getElementById('ext-' + id);
+        if (el && el.checked) exts.push(id);
+      });
+      return exts;
+    }
+
+    function loadExtensions() {
+      const saved = localStorage.getItem('proxyExtensions');
+      if (saved) {
+        const exts = JSON.parse(saved);
+        Object.keys(exts).forEach(key => {
+          const el = document.getElementById('ext-' + key);
+          if (el) el.checked = exts[key];
+        });
+      }
+      updateExtensionsBadge();
+    }
+
+    function updateExtensions() {
+      const extensions = {
+        adblock: document.getElementById('ext-adblock')?.checked || false,
+        tracking: document.getElementById('ext-tracking')?.checked || false,
+        privacy: document.getElementById('ext-privacy')?.checked || false,
+        malware: document.getElementById('ext-malware')?.checked || false,
+        security: document.getElementById('ext-security')?.checked || false,
+        darkmode: document.getElementById('ext-darkmode')?.checked || false,
+        nopopup: document.getElementById('ext-nopopup')?.checked || false,
+        nobanner: document.getElementById('ext-nobanner')?.checked || false,
+        reader: document.getElementById('ext-reader')?.checked || false,
+        noautoplay: document.getElementById('ext-noautoplay')?.checked || false,
+        nojs: document.getElementById('ext-nojs')?.checked || false,
+        lazyload: document.getElementById('ext-lazyload')?.checked || false,
+        nocookie: document.getElementById('ext-nocookie')?.checked || false,
+        images: document.getElementById('ext-images')?.checked || false,
+        nothirdparty: document.getElementById('ext-nothirdparty')?.checked || false
+      };
+      localStorage.setItem('proxyExtensions', JSON.stringify(extensions));
+      updateExtensionsBadge();
+      
+      // Reload current tab with new extensions
+      const tab = browser.tabs.find(t => t.id === browser.currentTabId);
+      if (tab && tab.url !== 'about:home') {
+        renderContent();
+      }
+    }
+
+    function updateExtensionsBadge() {
+      const count = getActiveExtensions().length;
+      const badge = document.getElementById('extensionsBadge');
+      const badgeCount = document.getElementById('badgeCount');
+      badgeCount.textContent = count;
+      if (count > 0) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleExtensionsPanel() {
+      document.getElementById('extensionsPanel').classList.toggle('hidden');
+    }
+
+    // Start browser
+    initBrowser();
+  </script>
+</body>
+</html>

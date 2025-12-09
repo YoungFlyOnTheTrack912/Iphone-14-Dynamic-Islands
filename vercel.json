@@ -1,0 +1,19 @@
+{
+  "buildCommand": "echo 'No build needed'",
+  "functions": {
+    "api/*.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/proxy", "destination": "/api/proxy.js" },
+    { "source": "/api/health", "destination": "/api/health.js" },
+    { "source": "/api/cache", "destination": "/api/cache.js" },
+    { "source": "/api/compress", "destination": "/api/compress.js" },
+    { "source": "/api/extensions", "destination": "/api/extensions.js" }
+  ],
+  "public": {
+    "maxAge": 3600
+  }
+}

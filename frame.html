@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loading...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      width: 100%; 
+      height: 100vh; 
+      overflow: hidden;
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    #iframe { 
+      width: 100%; 
+      height: 100%; 
+      border: none;
+      display: block;
+    }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      color: white;
+    }
+    #loading.hidden { display: none; }
+    .loading-content {
+      text-align: center;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .loading-url {
+      font-size: 12px;
+      opacity: 0.8;
+      word-break: break-all;
+    }
+    #error {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+    }
+    #error.hidden { display: none; }
+    .error-content {
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+    }
+    .error-content h1 {
+      color: #d32f2f;
+      margin-bottom: 20px;
+    }
+    .error-content p {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .error-content button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    .error-content button:hover {
+      background: #764ba2;
+    }
+    #progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      z-index: 9999;
+      transition: width 0.3s ease;
+      width: 0;
+    }
+    #extensionsPanel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 350px;
+      height: 100vh;
+      background: white;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+      z-index: 10002;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    #extensionsPanel:not(.hidden) {
+      transform: translateX(0);
+    }
+    #extensionsPanel.hidden {
+      display: flex;
+    }
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .panel-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .close-btn:hover {
+      color: #333;
+    }
+    .panel-body {
+      padding: 15px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .extension-toggle {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .extension-toggle:hover {
+      background: #f0f0f0;
+    }
+    .extension-toggle input[type="checkbox"] {
+      margin-top: 4px;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+    }
+    .extension-toggle span {
+      font-weight: 600;
+      color: #333;
+      display: block;
+    }
+    .extension-toggle small {
+      color: #999;
+      display: block;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .panel-footer {
+      padding: 15px;
+      border-top: 1px solid #eee;
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+    }
+    .panel-footer kbd {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .extensions-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      z-index: 10001;
+      transition: all 0.3s;
+    }
+    .extensions-badge:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+    .extensions-badge.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="progress"></div>
+  
+  <div id="extensionsPanel" class="hidden">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2>🛡️ Proxy Extensions</h2>
+        <button class="close-btn" onclick="toggleExtensionsPanel()">✕</button>
+      </div>
+      <div class="panel-body">
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-adblock" onchange="updateExtensions()">
+          <span>🚫 Ad Blocker</span>
+          <small>Remove all ads and ad scripts</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-tracking" onchange="updateExtensions()">
+          <span>👁️ Tracking Protection</span>
+          <small>Block analytics and pixels</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-privacy" onchange="updateExtensions()">
+          <span>🔒 Privacy Mode</span>
+          <small>Strip metadata and tracking</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-malware" onchange="updateExtensions()">
+          <span>⚠️ Malware Blocker</span>
+          <small>Block dangerous scripts</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-security" onchange="updateExtensions()">
+          <span>🔐 Security Headers</span>
+          <small>Add security protections</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-darkmode" onchange="updateExtensions()">
+          <span>🌙 Dark Mode</span>
+          <small>Apply dark theme to pages</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nopopup" onchange="updateExtensions()">
+          <span>⛔ Pop-up Blocker</span>
+          <small>Remove modals and dialogs</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nobanner" onchange="updateExtensions()">
+          <span>🚷 Banner Remover</span>
+          <small>Hide banners and notifications</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-reader" onchange="updateExtensions()">
+          <span>📖 Reader Mode</span>
+          <small>Clean reading layout</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-noautoplay" onchange="updateExtensions()">
+          <span>🔇 Disable Autoplay</span>
+          <small>Stop auto-playing videos</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nojs" onchange="updateExtensions()">
+          <span>⚙️ Disable JavaScript</span>
+          <small>Static content only</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-lazyload" onchange="updateExtensions()">
+          <span>⚡ Lazy Load</span>
+          <small>Load images on demand</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nocookie" onchange="updateExtensions()">
+          <span>🍪 No Cookies</span>
+          <small>Block cookie scripts</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-images" onchange="updateExtensions()">
+          <span>🖼️ Compress Images</span>
+          <small>Faster loading times</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-nothirdparty" onchange="updateExtensions()">
+          <span>🚫 Block Third-party</span>
+          <small>No external scripts/styles</small>
+        </label>
+      </div>
+      <div class="panel-footer">
+        <small>Press <kbd>Ctrl+Shift+X</kbd> to toggle this panel</small>
+      </div>
+    </div>
+  </div>
+
+  <div id="extensionsBadge" class="extensions-badge hidden" onclick="toggleExtensionsPanel()">
+    <span id="badgeCount">0</span>
+  </div>
+  
+  <div id="loading">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading page...</div>
+      <div class="loading-url" id="loadingUrl"></div>
+    </div>
+  </div>
+
+  <div id="error" class="hidden">
+    <div class="error-content">
+      <h1>⚠️ Error Loading Page</h1>
+      <p id="errorMsg"></p>
+      <button onclick="window.history.back()">Go Back</button>
+      <button onclick="location.href='/proxy.html'">Home</button>
+    </div>
+  </div>
+
+  <iframe id="iframe"></iframe>
+
+  <script>
+    // Load saved extensions from localStorage
+    function loadExtensions() {
+      const saved = localStorage.getItem('proxyExtensions');
+      if (saved) {
+        const exts = JSON.parse(saved);
+        Object.keys(exts).forEach(key => {
+          const el = document.getElementById('ext-' + key);
+          if (el) el.checked = exts[key];
+        });
+        updateExtensionsBadge();
+      }
+    }
+
+    // Save and apply extensions
+    function updateExtensions() {
+      const extensions = {
+        adblock: document.getElementById('ext-adblock').checked,
+        tracking: document.getElementById('ext-tracking').checked,
+        privacy: document.getElementById('ext-privacy').checked,
+        malware: document.getElementById('ext-malware').checked,
+        security: document.getElementById('ext-security').checked
+      };
+      localStorage.setItem('proxyExtensions', JSON.stringify(extensions));
+      updateExtensionsBadge();
+      
+      // Reload iframe with extensions
+      const params = new URLSearchParams(window.location.search);
+      const url = params.get('url');
+      const activeExts = Object.keys(extensions).filter(k => extensions[k]).join(',');
+      if (url) {
+        const iframeEl = document.getElementById('iframe');
+        const proxyUrl = '/api/proxy?url=' + encodeURIComponent(url);
+        iframeEl.src = activeExts ? proxyUrl + '&ext=' + activeExts : proxyUrl;
+      }
+    }
+
+    // Update badge showing active extensions
+    function updateExtensionsBadge() {
+      const count = document.querySelectorAll('.panel-body input[type="checkbox"]:checked').length;
+      const badge = document.getElementById('extensionsBadge');
+      const badgeCount = document.getElementById('badgeCount');
+      badgeCount.textContent = count;
+      if (count > 0) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // Toggle extensions panel
+    function toggleExtensionsPanel() {
+      const panel = document.getElementById('extensionsPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    // Ctrl+Shift+X keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+        e.preventDefault();
+        toggleExtensionsPanel();
+      }
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const targetUrl = params.get('url');
+    const domain = params.get('domain');
+
+    const iframe = document.getElementById('iframe');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const progress = document.getElementById('progress');
+    const loadingUrl = document.getElementById('loadingUrl');
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (!targetUrl) {
+      errorMsg.textContent = 'No URL provided. Please use the proxy home page.';
+      error.classList.remove('hidden');
+      loading.classList.add('hidden');
+      document.title = 'Error';
+      loadExtensions();
+      return;
+    }
+
+    // Load extensions on page start
+    loadExtensions();
+
+    // Update loading text and title
+    try {
+      loadingUrl.textContent = new URL(targetUrl).hostname;
+      document.title = 'Loading ' + new URL(targetUrl).hostname;
+    } catch (e) {
+      loadingUrl.textContent = targetUrl;
+    }
+
+    // Simulate progress
+    let currentProgress = 10;
+    const progressInterval = setInterval(() => {
+      if (currentProgress < 90) {
+        currentProgress += Math.random() * 30;
+        progress.style.width = currentProgress + '%';
+      }
+    }, 300);
+
+    // Get active extensions
+    const saved = localStorage.getItem('proxyExtensions');
+    const extensions = saved ? JSON.parse(saved) : {};
+    const activeExts = Object.keys(extensions).filter(k => extensions[k]).join(',');
+    const proxyUrl = '/api/proxy?url=' + encodeURIComponent(targetUrl);
+
+    // Set iframe source with extensions
+    iframe.src = activeExts ? proxyUrl + '&ext=' + activeExts : proxyUrl;
+
+    // Handle iframe load
+    iframe.onload = () => {
+      clearInterval(progressInterval);
+      progress.style.width = '100%';
+      setTimeout(() => {
+        loading.classList.add('hidden');
+        progress.style.opacity = '0';
+        progress.style.transition = 'opacity 0.5s ease';
+      }, 200);
+      
+      try {
+        const title = iframe.contentDocument?.title || domain || 'Proxy';
+        document.title = title;
+      } catch (e) {
+        // Cross-origin
+      }
+    };
+
+    // Handle errors
+    iframe.onerror = () => {
+      clearInterval(progressInterval);
+      loading.classList.add('hidden');
+      errorMsg.textContent = 'Failed to load page. The website may be blocking the proxy or is temporarily unavailable.';
+      error.classList.remove('hidden');
+      document.title = 'Error';
+    };
+
+    // Timeout after 30 seconds
+    setTimeout(() => {
+      if (loading.classList.contains('hidden') === false) {
+        clearInterval(progressInterval);
+        loading.classList.add('hidden');
+        errorMsg.textContent = 'Page took too long to load. Check your connection or try again later.';
+        error.classList.remove('hidden');
+        document.title = 'Timeout';
+      }
+    }, 30000);
+  </script>
+</body>
+</html>
