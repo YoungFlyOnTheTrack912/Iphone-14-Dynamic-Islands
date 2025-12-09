@@ -321,6 +321,26 @@
           <span>🚫 Block Third-party</span>
           <small>No external scripts/styles</small>
         </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-async" onchange="updateExtensions()">
+          <span>⚡ Async Scripts</span>
+          <small>Non-blocking JS loading</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-prefetch" onchange="updateExtensions()">
+          <span>🔗 DNS Prefetch</span>
+          <small>Faster external requests</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-noblockers" onchange="updateExtensions()">
+          <span>🚀 Remove Blockers</span>
+          <small>Remove render-blocking resources</small>
+        </label>
+        <label class="extension-toggle">
+          <input type="checkbox" id="ext-simpledom" onchange="updateExtensions()">
+          <span>📦 Simplify DOM</span>
+          <small>Remove hidden/unused elements</small>
+        </label>
       </div>
       <div class="panel-footer">
         <small>Press <kbd>Ctrl+Shift+X</kbd> to toggle this panel</small>
@@ -372,7 +392,21 @@
         tracking: document.getElementById('ext-tracking').checked,
         privacy: document.getElementById('ext-privacy').checked,
         malware: document.getElementById('ext-malware').checked,
-        security: document.getElementById('ext-security').checked
+        security: document.getElementById('ext-security').checked,
+        darkmode: document.getElementById('ext-darkmode').checked,
+        nopopup: document.getElementById('ext-nopopup').checked,
+        nobanner: document.getElementById('ext-nobanner').checked,
+        reader: document.getElementById('ext-reader').checked,
+        noautoplay: document.getElementById('ext-noautoplay').checked,
+        nojs: document.getElementById('ext-nojs').checked,
+        lazyload: document.getElementById('ext-lazyload').checked,
+        nocookie: document.getElementById('ext-nocookie').checked,
+        images: document.getElementById('ext-images').checked,
+        nothirdparty: document.getElementById('ext-nothirdparty').checked,
+        async: document.getElementById('ext-async').checked,
+        prefetch: document.getElementById('ext-prefetch').checked,
+        noblockers: document.getElementById('ext-noblockers').checked,
+        simpledom: document.getElementById('ext-simpledom').checked
       };
       localStorage.setItem('proxyExtensions', JSON.stringify(extensions));
       updateExtensionsBadge();

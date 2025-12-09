@@ -70,7 +70,8 @@ module.exports = async (req, res) => {
     const upstream = await fetch(targetUrl.href, {
       headers: {
         'user-agent': req.headers['user-agent'] || 'Proxy/1.0'
-      }
+      },
+      timeout: 15000 // Reduce timeout to 15 seconds for faster failures
     });
 
     const contentType = upstream.headers.get('content-type') || '';
